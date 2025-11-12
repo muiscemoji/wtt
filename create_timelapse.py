@@ -69,7 +69,7 @@ def get_images_for_date(date_str):
     logger.info(f"Всего найдено {len(images)} изображений за {date_str}")
     return images, video_width, video_height
 
-def resize_image_to_fit(image, scale, width, height, background_color):
+def resize_image_to_fit(image, scale, width, height, background_color=None, background=None):
     """
     Изменяет размер изображения с сохранением пропорций и добавляет фон.
     
@@ -79,6 +79,7 @@ def resize_image_to_fit(image, scale, width, height, background_color):
         width (int): Ширина получаемого видео
         height (int): Высота получаемого видео
         background_color (tuple): Цвет фона
+        background (PIL.Image): Изображение фона, если имеется
         
     Returns:
         tuple: (PIL.Image, (x, y, new_width, new_height)) — изображение и позиция/размер вставленного контента
@@ -87,7 +88,7 @@ def resize_image_to_fit(image, scale, width, height, background_color):
     # Если исходный размер уже совпадает с целевым и размер не отличен от установленного, возвращаем без пересэмплинга
     img_width, img_height = image.size
 
-    if img_width == width and img_height == height:
+    if img_width == width and img_height == height and background == None:
         if image.mode == 'RGBA':
             composed = Image.new('RGB', (width, height), background_color)
             composed.paste(image, (0, 0), image)
@@ -106,9 +107,32 @@ def resize_image_to_fit(image, scale, width, height, background_color):
         
         # Изменяем размер изображения
         resized_image = image.resize((new_width, new_height), resample)
+
+    if background != None:
+        # Скейлим фон
+        img_width, img_height = background.size
+
+        if img_width == width and img_height == height:
+            if image.mode == 'RGBA':
+                background.paste(image, (0, 0), image)
+                return background, (0, 0, width, height)
+            return background.convert('RGB'), (0, 0, width, height)
+        
+        if scale != 1:
+            # Новые размеры с сохранением пропорций
+            new_width = int(img_width * scale)
+            new_height = int(img_height * scale)
     
-    # Создаем новое изображение с белым фоном
-    result = Image.new('RGB', (width, height), background_color)
+            # Выбираем метод ресайза: для кратного масштабирования используем NEAREST (пиксель-перфект)
+            down_int = (img_width % width == 0) and (img_height % height == 0)
+            up_int = (width % img_width == 0) and (height % img_height == 0)
+            resample = Image.NEAREST if (down_int or up_int) else Image.Resampling.LANCZOS
+            
+            # Изменяем размер изображения
+            result = background.resize((new_width, new_height), resample)
+    else:
+        # Создаем новое изображение с белым фоном
+        result = Image.new('RGB', (width, height), background_color)
     
     # Вычисляем позицию для центрирования
     x = (width - new_width) // 2
@@ -196,9 +220,13 @@ def create_timelapse_video(images, output_path, video_width, video_height, fps=N
                     timestamp = f"{date_part[:4]}-{date_part[4:6]}-{date_part[6:8]} {time_part[:2]}:{time_part[2:4]}:{time_part[4:6]}"
                 else:
                     timestamp = f"Кадр {i+1}"
-                
-                # Изменяем размер и добавляем на белый фон
-                resized_image, placement = resize_image_to_fit(pil_image, SCALE, video_width, video_height, BACKGROUND_COLOR)
+
+                if BACKGROUND_PATH != None:
+                    background_image = Image.open(BACKGROUND_PATH)
+                    resized_image, placement = resize_image_to_fit(pil_image, SCALE, video_width, video_height, background = background_image)
+                else:
+                    # Изменяем размер и добавляем на белый фон
+                    resized_image, placement = resize_image_to_fit(pil_image, SCALE, video_width, video_height, background_color = BACKGROUND_COLOR)
                 
                 # Добавляем временную метку
                 final_image = add_timestamp_overlay(resized_image, timestamp)
