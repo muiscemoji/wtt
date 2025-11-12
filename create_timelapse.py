@@ -292,9 +292,9 @@ def main():
     # Создаем таймлапс
     
     if args.fps:
-        success = create_timelapse_video(images, output_path, video_width, video_height, int(args.fps))
+        success = create_timelapse_video(images, output_path, 3000, 3000, int(args.fps))
     else:
-        success = create_timelapse_video(images, output_path, video_width, video_height)
+        success = create_timelapse_video(images, output_path, 3000, 3000)
     
     
     if success:
