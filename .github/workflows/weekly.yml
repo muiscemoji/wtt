@@ -121,7 +121,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: timelapse-${{ steps.dates.outputs.date }}
-          path: timelapse/timelapse_${{ steps.dates.outputs.date }}.mp4
+          path: timelapse/compressed_${{ steps.dates.outputs.date }}.mp4
           if-no-files-found: error
 
       - name: Clean up daily dump images
