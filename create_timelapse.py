@@ -87,8 +87,10 @@ def resize_image_to_fit(image, scale, width, height, background_color=None, back
 
     # Если исходный размер уже совпадает с целевым и размер не отличен от установленного, возвращаем без пересэмплинга
     img_width, img_height = image.size
-
-    if img_width == width and img_height == height and background == None:
+    
+    if img_width != 3000:
+        scale = img_width / 3000
+    elif img_width == width and img_height == height and background == None:
         if image.mode == 'RGBA':
             composed = Image.new('RGB', (width, height), background_color)
             composed.paste(image, (0, 0), image)
