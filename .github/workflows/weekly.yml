@@ -113,7 +113,7 @@ jobs:
           -c:a aac -ac 2 \
           -shortest \
           -movflags +faststart \
-          compressed_${{ steps.dates.outputs.date }}.mp4
+          timelapse/compressed_${{ steps.dates.outputs.date }}.mp4
           rm -f timelapse/timelapse_${{ steps.dates.outputs.date }}.mp4 || true
 
       - name: Upload daily timelapse artifact
