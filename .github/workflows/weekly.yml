@@ -100,6 +100,9 @@ jobs:
           set -e
           python create_timelapse.py --date "${{ steps.dates.outputs.date }}" --fps 140
 
+      - name: Install FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v2
+
       - name: Convert timelapse
         run: |
           ffmpeg -i timelapse/timelapse_${{ steps.dates.outputs.date }}.mp4 \
