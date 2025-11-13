@@ -69,24 +69,27 @@ def get_images_for_date(date_str):
     logger.info(f"Всего найдено {len(images)} изображений за {date_str}")
     return images, video_width, video_height
 
+from PIL import Image
+
 def resize_image_to_fit(image, scale, width, height, background_color=None, background=None):
     """
-    Масштабирует изображение с сохранением пропорций и вставляет на фон.
+    Масштабирует изображение так, чтобы оно вписалось в целевой размер (width x height),
+    сохраняя пропорции и добавляя фон.
     """
-
     img_width, img_height = image.size
 
-    # Масштабирование
-    if scale != 1:
-        new_width = int(img_width * scale)
-        new_height = int(img_height * scale)
-        down_int = (img_width % width == 0) and (img_height % height == 0)
-        up_int = (width % img_width == 0) and (height % img_height == 0)
-        resample = Image.NEAREST if (down_int or up_int) else Image.Resampling.LANCZOS
-        resized_image = image.resize((new_width, new_height), resample)
-    else:
-        resized_image = image
-        new_width, new_height = img_width, img_height
+    # Если передан scale — применяем его к исходным размерам
+    scaled_width = int(img_width * scale)
+    scaled_height = int(img_height * scale)
+
+    # Коэффициент подгонки под размер видео
+    ratio = min(width / scaled_width, height / scaled_height)
+    new_width = int(scaled_width * ratio)
+    new_height = int(scaled_height * ratio)
+
+    # Изменяем размер с сохранением пропорций
+    resample = Image.Resampling.LANCZOS if ratio < 1 else Image.Resampling.BICUBIC
+    resized_image = image.resize((new_width, new_height), resample)
 
     # Создаём или масштабируем фон
     if background is not None:
@@ -94,13 +97,13 @@ def resize_image_to_fit(image, scale, width, height, background_color=None, back
         if bg.size != (width, height):
             bg = bg.resize((width, height), Image.Resampling.LANCZOS)
     else:
-        bg = Image.new('RGB', (width, height), background_color)
+        bg = Image.new('RGB', (width, height), background_color or (255, 255, 255))
 
     # Центрирование изображения
     x = (width - new_width) // 2
     y = (height - new_height) // 2
 
-    # Накладываем изображение
+    # Вставляем изображение
     if resized_image.mode == 'RGBA':
         bg.paste(resized_image, (x, y), resized_image)
     else:
